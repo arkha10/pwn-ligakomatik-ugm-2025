@@ -1,0 +1,75 @@
+from pwn import *
+
+p=process("./chall")
+elf=context.binary=ELF("./chall",checksec=False)
+
+# Leak stack (buffer) address
+pause()
+p.sendline("1")
+p.interactive()
+
+br *0x401467
+br *0x401507
+
+gef➤  heap chunks
+●→   0x401467 <main+01c6>      mov    rdi, rax
+     0x40146a <main+01c9>      call   0x401030 <free@plt>
+     0x40146f <main+01ce>      mov    rax, QWORD PTR [rbp-0x28]
+     0x401473 <main+01d2>      mov    rdi, rax
+     0x401476 <main+01d5>      call   0x401030 <free@plt>
+     0x40147b <main+01da>      lea    rax, [rip+0xc17]        # 0x402099
+[#0] Id 1, Name: "chall", stopped 0x401467 in main (), reason: BREAKPOINT
+───────────────────────────────────────────────────────────────────────────────────────────────────────────── trace ────
+[#0] 0x401467 → main()
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+gef➤  heap chunks
+Chunk(addr=0x1d430010, size=0x290, flags=PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
+    [0x000000001d430010     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................]
+Chunk(addr=0x1d4302a0, size=0x50, flags=PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
+    [0x000000001d4302a0     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................]
+Chunk(addr=0x1d4302f0, size=0x70, flags=PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
+    [0x000000001d4302f0     41 41 41 41 41 41 41 41 00 00 00 00 00 00 00 00    AAAAAAAA........]
+Chunk(addr=0x1d430360, size=0x70, flags=PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
+    [0x000000001d430360     3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d    ================]
+Chunk(addr=0x1d4303d0, size=0x70, flags=PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
+    [0x000000001d4303d0     3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d 3d    ================]
+
+
+
+
+
+
+
+●→   0x401507 <main+0266>      mov    edi, 0x60
+     0x40150c <main+026b>      call   0x401090 <malloc@plt>
+     0x401511 <main+0270>      mov    QWORD PTR [rbp-0x38], rax
+     0x401515 <main+0274>      mov    rax, QWORD PTR [rbp-0x38]
+     0x401519 <main+0278>      add    rax, 0x10
+     0x40151d <main+027c>      mov    rdi, rax
+─────────────────────────────────────────────────────────────────────────────────────────────────────────── threads ────
+[#0] Id 1, Name: "chall", stopped 0x401507 in main (), reason: BREAKPOINT
+───────────────────────────────────────────────────────────────────────────────────────────────────────────── trace ────
+[#0] 0x401507 → main()
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+gef➤  heap bins tcache
+─────────────────────────────────────────────── Tcachebins for thread 1 ───────────────────────────────────────────────
+Tcachebins[idx=5, size=0x70, count=2] ←  Chunk(addr=0x2e4f53d0, size=0x70, flags=PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)  ←  Chunk(addr=0x2e4f5360, size=0x70, flags=PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
+
+gef➤  search-pattern 0x2e4f53d0
+[+] Searching '\xd0\x53\x4f\x2e' in memory
+[+] In '[heap]'(0x2e4f5000-0x2e516000), permission=rw-
+  0x1d42fdd8 - 0x1d42fde8  →   "\xd0\x53\x4f\x2e[...]"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
